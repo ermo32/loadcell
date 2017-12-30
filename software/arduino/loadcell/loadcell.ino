@@ -11,8 +11,9 @@
 #include <HX711_ADC.h>
 
 //HX711 constructor (dout pin, sck pin)
-HX711_ADC LoadCell_1(4, 5); //HX711 1
-HX711_ADC LoadCell_2(6, 7); //HX711 2
+HX711_ADC LoadCell_1(5, 4); //HX711 1
+HX711_ADC LoadCell_2(6, 4); //HX711 2
+HX711_ADC LoadCell_3(7, 4); //HX711 3
 
 long t;
 
@@ -21,15 +22,19 @@ void setup() {
   Serial.println("Wait...");
   LoadCell_1.begin();
   LoadCell_2.begin();
+  LoadCell_3.begin();
   long stabilisingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilising time
   byte loadcell_1_rdy = 0;
   byte loadcell_2_rdy = 0;
-  while ((loadcell_1_rdy + loadcell_2_rdy) < 2) { //run startup, stabilization and tare, both modules simultaniously
+  byte loadcell_3_rdy = 0;
+  while ((loadcell_1_rdy + loadcell_2_rdy + loadcell_3_rdy) < 3) { //run startup, stabilization and tare, both modules simultaniously
     if (!loadcell_1_rdy) loadcell_1_rdy = LoadCell_1.startMultiple(stabilisingtime);
     if (!loadcell_2_rdy) loadcell_2_rdy = LoadCell_2.startMultiple(stabilisingtime);
+    if (!loadcell_3_rdy) loadcell_3_rdy = LoadCell_3.startMultiple(stabilisingtime);
   }
   LoadCell_1.setCalFactor(696.0); // user set calibration factor (float)
   LoadCell_2.setCalFactor(733.0); // user set calibration factor (float)
+  LoadCell_3.setCalFactor(733.0); // user set calibration factor (float)
   Serial.println("Startup + tare is complete");
 }
 
@@ -38,15 +43,19 @@ void loop() {
   //longer delay in scetch will reduce effective sample rate (be carefull with delay() in loop)
   LoadCell_1.update();
   LoadCell_2.update();
+  LoadCell_3.update();
 
   //get smoothed value from data set + current calibration factor
   if (millis() > t + 250) {
     float a = LoadCell_1.getData();
     float b = LoadCell_2.getData();
+    float c = LoadCell_3.getData();
     Serial.print("Load_cell 1 output val: ");
     Serial.print(a);
     Serial.print("    Load_cell 2 output val: ");
     Serial.println(b);
+    Serial.print("    Load_cell 3 output val: ");
+    Serial.println(c);
     t = millis();
   }
 
@@ -57,6 +66,7 @@ void loop() {
     if (inByte == 't') {
       LoadCell_1.tareNoDelay();
       LoadCell_2.tareNoDelay();
+      LoadCell_3.tareNoDelay();
     }
   }
 
@@ -66,6 +76,9 @@ void loop() {
   }
   if (LoadCell_2.getTareStatus() == true) {
     Serial.println("Tare load cell 2 complete");
+  }
+  if (LoadCell_3.getTareStatus() == true) {
+    Serial.println("Tare load cell 3 complete");
   }
 
 }
